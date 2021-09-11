@@ -70,7 +70,7 @@ class MeanForecast(BaseEstimator, TransformerMixin, RegressorMixin):
     X = pd.Series(prediction_vector, index =prediciton_time_vector)
     return X
 
-class NaiveDrift(BaseEstimator, TransformerMixin, RegressorMixin):
+class DriftForecast(BaseEstimator, TransformerMixin, RegressorMixin):
   def __init__(self, horizon, time_freq = "W-MON", how_many_previous = None,**model_hyper_parameters):
     super().__init__()
     self.horizon = horizon
