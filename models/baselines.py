@@ -70,3 +70,47 @@ class MeanForecast(BaseEstimator, TransformerMixin, RegressorMixin):
     X = pd.Series(prediction_vector, index =prediciton_time_vector)
     return X
 
+class NaiveDrift(BaseEstimator, TransformerMixin, RegressorMixin):
+  def __init__(self, horizon, time_freq = "W-MON", how_many_previous = None,**model_hyper_parameters):
+    super().__init__()
+    self.horizon = horizon
+    self.time_freq = time_freq
+    self.how_many_history = how_many_previous
+    self.if_exception = False
+
+  def fit(self, X, y = None):
+    ts_time_index = X.index
+    ts_values = X.values
+      
+    first_value = ts_values[0]
+
+    try:
+      last_value = ts_values[-1]
+      last_time_obs = ts_time_index[-1]
+    except:
+      last_value = -999
+      last_time_obs = ts_time_index[0]
+      self.if_exception = True
+
+    self.slope_ = round((last_value - first_value)/(len(ts_values) - 1),8)
+    self.last_time_obs_ = last_time_obs
+    self.last_value_ = last_value
+      
+    return self
+
+  def predict(self, X, y=None):
+    check_is_fitted(self)
+
+    horizon_for_loop = self.horizon + 1
+    prediciton_time_vector = pd.Index([self.last_time_obs_ + pd.offsets.DateOffset(weeks=i) for i in range(1,horizon_for_loop,1)],  freq = self.time_freq)
+
+    X = X.copy()
+
+    if self.if_exception:
+      prediciton_time_vector = pd.Index([self.last_time_obs_ + pd.offsets.DateOffset(weeks=i) for i in range(1,horizon_for_loop,1)],  freq = self.time_freq)
+      X = pd.Series([self.last_value_]*self.horizon, index =prediciton_time_vector)
+    else:
+      prediction_vector = np.linspace(self.last_value_, self.last_value_ + self.slope_*self.horizon, num = horizon_for_loop)[1:]
+      X = pd.Series(prediction_vector, index = prediciton_time_vector)
+
+    return X
